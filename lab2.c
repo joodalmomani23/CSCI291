@@ -11,6 +11,9 @@
 #define cprice 4.3 //price of cappuccino
 #define mprice 5.5  //price of mocha
 
+void user (); //user function prototype
+void admin (); // admin function prototype 
+
 int main()
 {
     int x;
