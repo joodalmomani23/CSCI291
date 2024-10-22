@@ -78,7 +78,7 @@ void user() {
     } else if (drink == 3) {
         price = mPrice;
         if (coffeeBeans < COFFEE_BEANS || water < MWATER || milk < MMILK || chocolateSyrup < MCHOCOSYRUP) {
-            printf(" Unavailable due to temporarily insufficient ingredients.\n");
+            printf(" Unavailable at the moment.\n");
             return; // Proper return here
         }
     } else {
@@ -118,11 +118,6 @@ void user() {
                 chocolateSyrup -= (drink == 3) ? MCHOCOSYRUP : 0;
                 total_amount += price; // Add to total sales
 
-                 // Check ingredient levels and send alerts
-                if (coffeeBeans <= COFFEE_BEANS) printf("Alert: Low coffee beans!\n");
-                if (water <= WATER) printf("Alert: Low water!\n");
-                if (milk <= CMILK) printf("Alert: Low milk!\n");
-                if (chocolateSyrup <= MCHOCOSYRUP) printf("Alert: Low chocolate syrup!\n");
             }
         }
     } else {
@@ -166,9 +161,18 @@ void admin() {
 void displayIngredients() {
     printf("\nCurrent Ingredients:\n");
     printf("%-12s%d\n", "Coffee Beans:", coffeeBeans);
+    if (coffeeBeans < COFFEE_BEANS) printf("Warning: Not enough coffee beans for a single serving!\n");
+
     printf("%-12s%d\n", "Water:", water);
+    if (water < WATER) printf("Warning: Not enough water for a single serving!\n");
+
     printf("%-12s%d\n", "Milk:", milk);
+    if (milk < CMILK) printf("Warning: Not enough milk for a Cappuccino!\n");
+    if (milk < MMILK) printf("Warning: Not enough milk for a Mocha!\n");
+
     printf("%-12s%d\n", "Chocolate Syrup:", chocolateSyrup);
+    if (chocolateSyrup < MCHOCOSYRUP) printf("Warning: Not enough chocolate syrup for a Mocha!\n");
+
     printf("%-12s%.2f AED\n", "Total Sales:", total_amount);
 
     char reset;
@@ -181,29 +185,30 @@ void displayIngredients() {
     }
 }
 
+
+#include <stdlib.h>  // For rand()
+
 void replenishIngredients() {
-    printf("Replenish coffee beans: ");
-    int beans;
-    scanf("%d", &beans);
+    // Generate random amounts to replenish each ingredient (between 10 and 50 units)
+    int beans = rand() % 41 + 10;   // Random between 10 and 50
+    int w = rand() % 41 + 10;       // Random between 10 and 50
+    int m = rand() % 41 + 10;       // Random between 10 and 50
+    int syrup = rand() % 41 + 10;   // Random between 10 and 50
+
+    // Add the random amounts to the current ingredient levels
     coffeeBeans += beans;
-   
-    printf("Replenish water: ");
-    int w;
-    scanf("%d", &w);
     water += w;
-    
-    printf("Replenish milk: ");
-    int m;
-    scanf("%d", &m);
     milk += m;
-    
-    printf("Replenish chocolate syrup: ");
-    int syrup;
-    scanf("%d", &syrup);
     chocolateSyrup += syrup;
-    
-    printf("Ingredients replenished.\n");
+
+    // Print how much of each ingredient was replenished
+    printf("\nIngredients replenished randomly:\n");
+    printf("%-12s%d (added %d)\n", "Coffee Beans:", coffeeBeans, beans);
+    printf("%-12s%d (added %d)\n", "Water:", water, w);
+    printf("%-12s%d (added %d)\n", "Milk:", milk, m);
+    printf("%-12s%d (added %d)\n", "Chocolate Syrup:", chocolateSyrup, syrup);
 }
+
 
 void changePrices() {
     // Display the current price of Espresso
@@ -231,3 +236,6 @@ void changePrices() {
 //add in admin menu-> 1:  Display the quantity of each ingredient in the machine and the total sale amount, 2;replenish 3;change price 0;exit
 // Display the total sale amount (total_amount); prompt the operator if (s)he would like to reset it to zero. If so, reset the total_amount variable and remind the operator to collect the money from the machine.
 //add an exit to the infinite loop
+
+//make error message under amoint of ingredeients 
+//replenish ingredients using rand function 
