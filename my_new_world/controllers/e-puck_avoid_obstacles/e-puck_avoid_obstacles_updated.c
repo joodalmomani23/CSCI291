@@ -1,13 +1,14 @@
-#include <webots/robot.h>
+ #include <webots/robot.h>
 #include <webots/motor.h>
 #include <webots/distance_sensor.h>
+#include <webots/light_sensor.h>  // Include for light sensor
 #include <stdio.h>
 
 #define TIME_STEP 64
-#define MAX_VELOCITY 6.28
+#define MAX_SPEED 6.28
 
 int main(int argc, char **argv) {
-  wb_robot_init();
+  wb_robot_init();  // Initialize the Webots API
 
   // Initialize motors
   WbDeviceTag left_motor = wb_robot_get_device("left wheel motor");
@@ -19,51 +20,71 @@ int main(int argc, char **argv) {
   wb_motor_set_velocity(right_motor, 0.0);
 
   // Initialize proximity sensors
-  WbDeviceTag sensors[8];
-  for (int i = 0; i < 8; ++i) {
-    char sensor_id[5];
-    snprintf(sensor_id, sizeof(sensor_id), "ps%d", i);
-    sensors[i] = wb_robot_get_device(sensor_id);
-    wb_distance_sensor_enable(sensors[i], TIME_STEP);
+  WbDeviceTag prox_sensors[8];
+  char prox_sensor_name[50];
+  for (int ind = 0; ind < 8; ++ind) {
+    sprintf(prox_sensor_name, "ps%d", ind);
+    prox_sensors[ind] = wb_robot_get_device(prox_sensor_name);
+    wb_distance_sensor_enable(prox_sensors[ind], TIME_STEP);
   }
 
-  double speeds[2] = {MAX_VELOCITY, MAX_VELOCITY};
+  // Initialize the light sensor
+  WbDeviceTag light_sensor = wb_robot_get_device("lts"); 
+  wb_light_sensor_enable(light_sensor, TIME_STEP);
+
+  double left_speed = MAX_SPEED;
+  double right_speed = MAX_SPEED;
+
+  // Define an array to store light sensor and distance sensor values
+  double values[30][2];  // Assuming max 30 readings
+  int value_count = 0;   // Counter for readings
 
   while (wb_robot_step(TIME_STEP) != -1) {
-    bool walls[3] = {
-      wb_distance_sensor_get_value(sensors[5]) > 80,  // Left wall
-      wb_distance_sensor_get_value(sensors[6]) > 80,  // Left corner
-      wb_distance_sensor_get_value(sensors[7]) > 80   // Front wall
-    };
+    // Sensor readings
+    bool left_wall = wb_distance_sensor_get_value(prox_sensors[5]) > 80;
+    bool left_corner = wb_distance_sensor_get_value(prox_sensors[6]) > 80;
+    bool front_wall = wb_distance_sensor_get_value(prox_sensors[7]) > 80;
+    bool right_wall = wb_distance_sensor_get_value(prox_sensors[2]) > 80;
 
-    // Handle wall in front
-    if (walls[2]) {
-      speeds[0] = MAX_VELOCITY;
-      speeds[1] = -MAX_VELOCITY;
+  
+
+    // Light sensor reading
+    double light_value = wb_light_sensor_get_value(light_sensor);
+    printf("Light Sensor Value: %f\n", light_value);  // Display light sensor value
+
+    // If walls are detected on the left, right, and front, store the light and distance sensor values
+    if (right_wall && left_wall && front_wall && value_count < 30) {
+      values[value_count][0] = light_value;                              // Store light sensor value
+      values[value_count][1] = wb_distance_sensor_get_value(prox_sensors[7]);  // Store front wall distance sensor value (example)
+      printf("Storing light and distance sensor values at count %d\n", value_count);
+      value_count++;
+    }
+
+    // Robot's wall-following logic
+    if (front_wall) {
+      left_speed = MAX_SPEED;
+      right_speed = -MAX_SPEED;
+    } else if (left_wall) {
+      left_speed = MAX_SPEED;
+      right_speed = MAX_SPEED;
     } else {
-      // Wall on left, go straight
-      if (walls[0]) {
-        speeds[0] = MAX_VELOCITY;
-        speeds[1] = MAX_VELOCITY;
-      }
-      // No wall on left, turn left to find wall
-      else {
-        speeds[0] = MAX_VELOCITY / 8;
-        speeds[1] = MAX_VELOCITY;
-      }
+      left_speed = MAX_SPEED / 8;
+      right_speed = MAX_SPEED;
+    }
 
-      // Avoid getting too close to left corner
-      if (walls[1]) {
-        speeds[0] = MAX_VELOCITY;
-        speeds[1] = MAX_VELOCITY / 8;
-      }
+    // Slow down if the left corner is detected
+    if (left_corner) {
+      left_speed = MAX_SPEED;
+      right_speed = MAX_SPEED / 8;
     }
 
     // Set motor speeds
-    wb_motor_set_velocity(left_motor, speeds[0]);
-    wb_motor_set_velocity(right_motor, speeds[1]);
+    wb_motor_set_velocity(left_motor, left_speed);
+    wb_motor_set_velocity(right_motor, right_speed);
   }
 
+  // Cleanup the Webots API
   wb_robot_cleanup();
+
   return 0;
 }
